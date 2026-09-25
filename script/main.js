@@ -34,10 +34,19 @@ document.addEventListener('DOMContentLoaded', () => {
     song.addEventListener('play', updateMusicControl);
     song.addEventListener('pause', updateMusicControl);
     $('#next').addEventListener('click', nextSection);
-    $('#turn-age').addEventListener('click', () => {
+    const turnAge = () => {
         if (currentSection !== 3 || !birthdayTimeline || birthdayTimeline.time() >= birthdayTimeline.labels.turn) return;
         birthdayTimeline.seek('turn').play();
+    };
+    $('#turn-age').addEventListener('click', turnAge);
+    $('#age-trigger').addEventListener('click', turnAge);
+    let ageTouchY;
+    $('#age-trigger').addEventListener('pointerdown', event => { ageTouchY = event.clientY; });
+    $('#age-trigger').addEventListener('pointerup', event => {
+        if (ageTouchY !== undefined && ageTouchY - event.clientY > 25) turnAge();
+        ageTouchY = undefined;
     });
+    $('#age-trigger').addEventListener('pointercancel', () => { ageTouchY = undefined; });
     $('#read-message').addEventListener('click', () => {
         if (currentSection !== 2 || !birthdayTimeline) return;
         if (birthdayTimeline.paused()) {
@@ -269,7 +278,7 @@ function goToSection(index) {
     for (let i = 0; i < sections.length; i++) {
         const scene = $(sections[i].selector);
         const keep = i === index || (index >= 8 && i === 7) || (index === 9 && i === 8);
-        gsap.set(scene, {display: keep ? 'block' : 'none', autoAlpha: keep ? 1 : 0, y: 0});
+        gsap.set(scene, {display: keep ? (i === 4 ? 'flex' : 'block') : 'none', autoAlpha: keep ? 1 : 0, y: 0});
     }
     gsap.set('.baloons img, .eight svg', {autoAlpha: 0});
     if (index >= 8) showPhoto(photoIndex, false);
@@ -313,15 +322,24 @@ function goToSection(index) {
             gsap.set('.age-zero', {autoAlpha: 1, yPercent: 0, rotationX: 0});
             gsap.set('.age-one', {autoAlpha: 0, yPercent: reducedMotion ? 0 : 100, rotationX: reducedMotion ? 0 : -60});
             gsap.set('.age-note', {autoAlpha: 0});
-            gsap.set('.age-intro, #turn-age', {autoAlpha: 1});
+            gsap.set('.age-intro, .age-hint, #turn-age', {autoAlpha: 1});
+            gsap.set('.age-sparkles i', {autoAlpha: 0, x: 0, y: 0, scale: 0.4});
             gsap.set('.age-number', {scale: 1, textShadow: '0 0 0px transparent'});
             hold(1.5);
             tl.addLabel('turn')
-              .to('#turn-age, .age-intro', {autoAlpha: 0, duration: 0.15})
+              .to('#turn-age, .age-intro, .age-hint', {autoAlpha: 0, duration: 0.15})
               .to('.age-zero', {autoAlpha: 0, yPercent: reducedMotion ? 0 : -110, rotationX: reducedMotion ? 0 : 60, duration: 0.45}, 'turn')
               .to('.age-one', {autoAlpha: 1, yPercent: 0, rotationX: 0, duration: 0.45, ease: 'power2.out'}, 'turn+=0.12')
               .to('.age-number', {scale: reducedMotion ? 1 : 1.06, textShadow: '0 0 28px #e6579266', duration: 0.25, repeat: 1, yoyo: true})
               .to('.age-note', {autoAlpha: 1, duration: 0.25});
+            if (!reducedMotion) {
+                tl.to('.age-sparkles i', {autoAlpha: 0.8, duration: 0.12}, 'turn+=0.4')
+                  .to('.age-sparkles i', {
+                      x: i => Math.cos(i * Math.PI / 4) * 125,
+                      y: i => Math.sin(i * Math.PI / 4) * 105,
+                      scale: 1.2, autoAlpha: 0, duration: 0.8, ease: 'power2.out'
+                  }, 'turn+=0.52');
+            }
             hold(1.5);
             break;
         case 4:
@@ -341,8 +359,13 @@ function goToSection(index) {
                   autoAlpha: 1, y: 0, color: '#ff69b4', duration, stagger: reducedMotion ? 0 : 0.025
               });
             if (!reducedMotion) {
-                tl.fromTo('.baloons img', {autoAlpha: 0.7, y: window.innerHeight + 150}, {
-                    autoAlpha: 0, y: -300, duration: 2, stagger: 0.025
+                gsap.set('.baloons img', {
+                    left: i => `${5 + (i * 29) % 90}%`, right: 'auto', top: 0,
+                    xPercent: -38, x: 0, rotation: i => (i % 5 - 2) * 7
+                });
+                tl.fromTo('.baloons img', {autoAlpha: 0.75, y: i => window.innerHeight + (i % 5) * 65}, {
+                    autoAlpha: 0, y: -650, x: i => (i % 2 ? 1 : -1) * (25 + i % 4 * 15),
+                    rotation: i => (i % 3 - 1) * 12, duration: 2.8, stagger: 0.025
                 }, 0.35)
                 .fromTo('.eight svg', {autoAlpha: 0.18, scale: 1}, {
                     autoAlpha: 0, scale: 5, duration: 1.5, stagger: 0.06
@@ -353,8 +376,8 @@ function goToSection(index) {
         case 7:
             carouselManual = false;
             showPhoto(0, false);
-            // Each of the four photos gets a turn without requiring arrow clicks.
-            for (let i = 1; i < 4; i++) {
+            // Include every photo in autoplay as well as manual browsing.
+            for (let i = 1; i < document.querySelectorAll('.photo-button').length; i++) {
                 hold(4);
                 tl.call(() => { if (!carouselManual) showPhoto(i); });
             }
