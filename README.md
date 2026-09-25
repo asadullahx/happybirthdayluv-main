@@ -15,7 +15,7 @@ Internet access loads GSAP, SweetAlert2, and Google Fonts. If the animation libr
 - **20 → 21 waits for interaction:** tap the number, swipe upward on it, or press **Turn the page →**. Keyboard users can activate either button with Enter or Space. Next also triggers the transformation while waiting; afterward, autoplay resumes.
 - The long message and poem each have **Pause to read**. This reveals the complete text and pauses the presentation until **Continue →** or Next is pressed.
 - The poem reveals one line every 1.1 seconds, then briefly holds the complete poem.
-- The full-screen carousel includes six photos, shown for four seconds each. Photos fit without cropping; swipe left or right to change them. Use its arrows, left/right keyboard keys while focused inside the carousel, or swipe to browse. Tap a photo to open the full-screen lightbox, which also supports swipes and arrows; close with the close button or Escape.
+- The full-screen carousel includes thirteen photos, shown for four seconds each. Photos fit without cropping; swipe left or right to change them. Use its arrows, left/right keyboard keys while focused inside the carousel, or swipe to browse. Tap a photo to open the full-screen lightbox, which also supports swipes and arrows; close with the close button or Escape.
 - The floating music button toggles playback. Replay restarts the presentation and restarts music if it is playing.
 - Tap **luv ❤️** three times in the intro for a small Easter egg.
 - Reduced-motion preferences are respected. The full birthday message is also available to reread at the ending.
@@ -27,7 +27,7 @@ Internet access loads GSAP, SweetAlert2, and Google Fonts. If the animation libr
 | `index.html` | Greeting, personal message, poem, photo references, and ending |
 | `style/main.css` | Colours, typography, responsive layouts, and visual effects |
 | `script/main.js` | Countdown, section timings, navigation, music, and carousel |
-| `img/photo-1.jpeg` … `img/photo-6.jpeg` | Photos in carousel order |
+| `img/photo-1.jpeg` … `img/photo-13.jpeg` | Photos in carousel order |
 | `music/hbd.mpeg` | Looping background music |
 
 To replace a photo, replace its JPEG or update its `src` in `index.html`. To add another, add a `.photo-button` inside `.photo-gallery`; autoplay and the counter use the number of photo buttons automatically. Captions are intentionally omitted.
