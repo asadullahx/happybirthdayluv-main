@@ -11,6 +11,7 @@ let photoIndex = 0;
 let photoTimeline;
 let carouselManual = false;
 let presentationStarted = false;
+let ageTurned = false;
 const sections = [
     {name: 'Intro', selector: '.container > .one'},
     {name: 'Birthday greeting', selector: '.three'},
@@ -34,10 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     song.addEventListener('play', updateMusicControl);
     song.addEventListener('pause', updateMusicControl);
     $('#next').addEventListener('click', nextSection);
-    const turnAge = () => {
-        if (currentSection !== 3 || !birthdayTimeline || birthdayTimeline.time() >= birthdayTimeline.labels.turn) return;
-        birthdayTimeline.seek('turn').play();
-    };
     $('#turn-age').addEventListener('click', turnAge);
     $('#age-trigger').addEventListener('click', turnAge);
     let ageTouchY;
@@ -57,6 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
             birthdayTimeline.seek('letter-read').pause();
             $('#read-message').textContent = 'Continue →';
             $('#read-message').setAttribute('aria-pressed', 'true');
+        }
+    });
+    $('#read-poem').addEventListener('click', () => {
+        if (currentSection !== 4 || !birthdayTimeline) return;
+        if (birthdayTimeline.paused()) {
+            birthdayTimeline.play();
+            $('#read-poem').textContent = 'Pause to read';
+            $('#read-poem').setAttribute('aria-pressed', 'false');
+        } else {
+            birthdayTimeline.seek('poem-read').pause();
+            $('#read-poem').textContent = 'Continue →';
+            $('#read-poem').setAttribute('aria-pressed', 'true');
         }
     });
     setupCarousel();
@@ -159,6 +168,7 @@ function showStaticBirthday() {
     $('#next').hidden = true;
     $('#progress').hidden = true;
     $('#read-message').hidden = true;
+    $('#read-poem').hidden = true;
     $('#turn-age').hidden = true;
     showPhoto(photoIndex, false);
 }
@@ -180,19 +190,46 @@ function setupLightbox() {
     const dialog = $('#lightbox');
     let wasPlaying = false;
     let opener;
+    const cards = [...document.querySelectorAll('.photo-button')];
+    let enlargedIndex = 0;
+    const displayPhoto = index => {
+        enlargedIndex = (index + cards.length) % cards.length;
+        const source = cards[enlargedIndex].querySelector('img');
+        dialog.querySelector('img').src = source.src;
+        dialog.querySelector('img').alt = source.alt;
+        $('#lightbox-counter').textContent = `${enlargedIndex + 1} / ${cards.length}`;
+        showPhoto(enlargedIndex, false);
+        opener = cards[enlargedIndex];
+    };
     document.querySelectorAll('.photo-button').forEach(button => {
         button.addEventListener('click', () => {
-            opener = button;
-            const source = button.querySelector('img');
-            dialog.querySelector('img').src = source.src;
-            dialog.querySelector('img').alt = source.alt;
+            displayPhoto(cards.indexOf(button));
             wasPlaying = Boolean(birthdayTimeline && !birthdayTimeline.paused() && birthdayTimeline.progress() < 1);
             if (wasPlaying) birthdayTimeline.pause();
             dialog.showModal();
         });
     });
     $('#close-lightbox').addEventListener('click', () => dialog.close());
-    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+    $('#lightbox-prev').addEventListener('click', () => displayPhoto(enlargedIndex - 1));
+    $('#lightbox-next').addEventListener('click', () => displayPhoto(enlargedIndex + 1));
+    dialog.addEventListener('keydown', event => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            displayPhoto(enlargedIndex + (event.key === 'ArrowLeft' ? -1 : 1));
+        }
+    });
+    let startTouch;
+    dialog.addEventListener('touchstart', event => {
+        startTouch = event.touches.length === 1 ? [event.touches[0].clientX, event.touches[0].clientY] : null;
+    }, {passive: true});
+    dialog.addEventListener('touchend', event => {
+        if (!startTouch) return;
+        const dx = event.changedTouches[0].clientX - startTouch[0];
+        const dy = event.changedTouches[0].clientY - startTouch[1];
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) displayPhoto(enlargedIndex + (dx < 0 ? 1 : -1));
+        startTouch = null;
+    }, {passive: true});
+    dialog.addEventListener('touchcancel', () => { startTouch = null; });
     // Native dialog handles Escape, focus trapping, and touch activation.
     dialog.addEventListener('close', () => {
         if (wasPlaying) birthdayTimeline?.play();
@@ -262,8 +299,19 @@ function animationTimeline() {
     goToSection(0);
 }
 
+function turnAge() {
+    if (currentSection !== 3 || !birthdayTimeline || ageTurned) return;
+    ageTurned = true;
+    birthdayTimeline.seek('turn', true).play();
+}
+
 function nextSection() {
     if (!birthdayTimeline || performance.now() < navigationLockedUntil || currentSection >= sections.length - 1) return;
+    if (currentSection === 3 && !ageTurned) {
+        turnAge();
+        navigationLockedUntil = performance.now() + 400;
+        return;
+    }
     goToSection(currentSection + 1);
 }
 
@@ -278,7 +326,7 @@ function goToSection(index) {
     for (let i = 0; i < sections.length; i++) {
         const scene = $(sections[i].selector);
         const keep = i === index || (index >= 8 && i === 7) || (index === 9 && i === 8);
-        gsap.set(scene, {display: keep ? (i === 4 ? 'flex' : 'block') : 'none', autoAlpha: keep ? 1 : 0, y: 0});
+        gsap.set(scene, {display: keep ? (i === 4 || i === 7 ? 'flex' : 'block') : 'none', autoAlpha: keep ? 1 : 0, y: 0});
     }
     gsap.set('.baloons img, .eight svg', {autoAlpha: 0});
     if (index >= 8) showPhoto(photoIndex, false);
@@ -319,14 +367,16 @@ function goToSection(index) {
             hold(reducedMotion ? 25 : 8);
             break;
         case 3:
+            ageTurned = false;
             gsap.set('.age-zero', {autoAlpha: 1, yPercent: 0, rotationX: 0});
             gsap.set('.age-one', {autoAlpha: 0, yPercent: reducedMotion ? 0 : 100, rotationX: reducedMotion ? 0 : -60});
             gsap.set('.age-note', {autoAlpha: 0});
             gsap.set('.age-intro, .age-hint, #turn-age', {autoAlpha: 1});
             gsap.set('.age-sparkles i', {autoAlpha: 0, x: 0, y: 0, scale: 0.4});
             gsap.set('.age-number', {scale: 1, textShadow: '0 0 0px transparent'});
-            hold(1.5);
-            tl.addLabel('turn')
+            // Wait indefinitely after revealing 20. Only a user action resumes.
+            tl.addPause()
+              .addLabel('turn', '+=0.001')
               .to('#turn-age, .age-intro, .age-hint', {autoAlpha: 0, duration: 0.15})
               .to('.age-zero', {autoAlpha: 0, yPercent: reducedMotion ? 0 : -110, rotationX: reducedMotion ? 0 : 60, duration: 0.45}, 'turn')
               .to('.age-one', {autoAlpha: 1, yPercent: 0, rotationX: 0, duration: 0.45, ease: 'power2.out'}, 'turn+=0.12')
@@ -343,10 +393,12 @@ function goToSection(index) {
             hold(1.5);
             break;
         case 4:
+            $('#read-poem').textContent = 'Pause to read';
+            $('#read-poem').setAttribute('aria-pressed', 'false');
             tl.fromTo('.poem p', {autoAlpha: 0, y: rise}, {
-                autoAlpha: 1, y: 0, duration, stagger: 0.7
-            });
-            hold(2.4);
+                autoAlpha: 1, y: 0, duration: reducedMotion ? 0.12 : 0.7, stagger: 1.1
+            }).addLabel('poem-read');
+            hold(3.5);
             break;
         case 5:
             tl.fromTo('.memory .years', {autoAlpha: 0}, {autoAlpha: 1, duration})
