@@ -284,7 +284,7 @@ function goToSection(index) {
         if (currentSection === index && index < sections.length - 1) goToSection(index + 1);
     }});
     birthdayTimeline = tl;
-    const duration = reducedMotion ? 0.12 : 0.35;
+    const duration = reducedMotion ? 0.12 : 0.5;
     const rise = reducedMotion ? 0 : 12;
     const hold = seconds => tl.to({}, {duration: seconds});
     tl.fromTo(scene, {autoAlpha: 0, y: rise}, {autoAlpha: 1, y: 0, duration});
@@ -293,20 +293,21 @@ function goToSection(index) {
             gsap.set('#name', {autoAlpha: 1});
             gsap.set('#affection', {autoAlpha: 0});
             tl.fromTo('#name span', {autoAlpha: 0}, {autoAlpha: 1, duration: 0.08, stagger: reducedMotion ? 0 : 0.07})
-              .to('#name', {autoAlpha: 0, duration}, '+=0.6')
+              .to('#name', {autoAlpha: 0, duration}, '+=1.2')
               .to('#affection', {autoAlpha: 1, duration});
-            hold(1.2);
+            hold(2.5);
             break;
         case 1:
-            hold(1.1);
+            hold(2.4);
             break;
         case 2:
             $('#read-message').textContent = 'Pause to read';
             $('#read-message').setAttribute('aria-pressed', 'false');
             tl.fromTo('.hbd-chatbox span', {autoAlpha: 0}, {
-                autoAlpha: 1, duration: reducedMotion ? 0 : 0.12, stagger: reducedMotion ? 0 : 0.022
+                autoAlpha: 1, duration: reducedMotion ? 0 : 0.18, stagger: reducedMotion ? 0 : 0.055
             }).addLabel('letter-read');
-            hold(1.2);
+            // Give the letter breathing room; Pause to read offers unlimited time.
+            hold(reducedMotion ? 25 : 8);
             break;
         case 3:
             gsap.set('.age-zero', {autoAlpha: 1, yPercent: 0, rotationX: 0});
@@ -314,25 +315,25 @@ function goToSection(index) {
             gsap.set('.age-note', {autoAlpha: 0});
             gsap.set('.age-intro, #turn-age', {autoAlpha: 1});
             gsap.set('.age-number', {scale: 1, textShadow: '0 0 0px transparent'});
-            hold(1);
+            hold(1.5);
             tl.addLabel('turn')
               .to('#turn-age, .age-intro', {autoAlpha: 0, duration: 0.15})
               .to('.age-zero', {autoAlpha: 0, yPercent: reducedMotion ? 0 : -110, rotationX: reducedMotion ? 0 : 60, duration: 0.45}, 'turn')
               .to('.age-one', {autoAlpha: 1, yPercent: 0, rotationX: 0, duration: 0.45, ease: 'power2.out'}, 'turn+=0.12')
               .to('.age-number', {scale: reducedMotion ? 1 : 1.06, textShadow: '0 0 28px #e6579266', duration: 0.25, repeat: 1, yoyo: true})
               .to('.age-note', {autoAlpha: 1, duration: 0.25});
-            hold(0.9);
+            hold(1.5);
             break;
         case 4:
             tl.fromTo('.poem p', {autoAlpha: 0, y: rise}, {
-                autoAlpha: 1, y: 0, duration, stagger: reducedMotion ? 0.35 : 0.5
+                autoAlpha: 1, y: 0, duration, stagger: 0.7
             });
-            hold(1.2);
+            hold(2.4);
             break;
         case 5:
             tl.fromTo('.memory .years', {autoAlpha: 0}, {autoAlpha: 1, duration})
-              .fromTo('.memory p:last-child', {autoAlpha: 0}, {autoAlpha: 1, duration}, '+=0.25');
-            hold(1.2);
+              .fromTo('.memory p:last-child', {autoAlpha: 0}, {autoAlpha: 1, duration}, '+=0.5');
+            hold(2.5);
             break;
         case 6:
             tl.call(burstConfetti)
@@ -347,29 +348,29 @@ function goToSection(index) {
                     autoAlpha: 0, scale: 5, duration: 1.5, stagger: 0.06
                 }, 0.35);
             }
-            hold(0.6);
+            hold(1.8);
             break;
         case 7:
             carouselManual = false;
             showPhoto(0, false);
             // Each of the four photos gets a turn without requiring arrow clicks.
             for (let i = 1; i < 4; i++) {
-                hold(2.4);
+                hold(4);
                 tl.call(() => { if (!carouselManual) showPhoto(i); });
             }
-            hold(2.4);
+            hold(4);
             break;
         case 8:
             gsap.set('.one-more, .final-note', {autoAlpha: 0});
             tl.to('.one-more', {autoAlpha: 1, duration})
-              .to('.final-note', {autoAlpha: 1, duration}, '+=0.7');
-            hold(1.2);
+              .to('.final-note', {autoAlpha: 1, duration}, '+=1.2');
+            hold(2.5);
             break;
         case 9:
             // This screen stays available, along with photos and the full letter.
             break;
     }
-    if (index < 7) tl.to(scene, {autoAlpha: 0, duration: reducedMotion ? 0.1 : 0.18});
+    if (index < 7) tl.to(scene, {autoAlpha: 0, duration: reducedMotion ? 0.1 : 0.3});
     tl.play(0);
 }
 
@@ -380,7 +381,7 @@ function setupCarousel() {
         showPhoto(photoIndex + delta);
         // Give manual browsing a fresh viewing window without delaying other stages.
         if (currentSection === 7 && birthdayTimeline && !$('#lightbox').open) {
-            birthdayTimeline.seek(Math.max(0, birthdayTimeline.duration() - 3), true).play();
+            birthdayTimeline.seek(Math.max(0, birthdayTimeline.duration() - 4), true).play();
         }
     };
     $('#photo-prev').addEventListener('click', () => move(-1));
