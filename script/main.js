@@ -1,10 +1,28 @@
-﻿const birthdayTime = Date.parse('2026-09-26T00:00:00+05:00');
+const birthdayTime = Date.parse('2026-09-26T00:00:00+05:00');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let birthdayTimeline;
 let song;
 let confettiTimer;
 let eggTimer;
 let unlocked = false;
+let currentSection = -1;
+let navigationLockedUntil = 0;
+let photoIndex = 0;
+let photoTimeline;
+let carouselManual = false;
+let presentationStarted = false;
+const sections = [
+    {name: 'Intro', selector: '.container > .one'},
+    {name: 'Birthday greeting', selector: '.three'},
+    {name: 'Your birthday message', selector: '.four'},
+    {name: 'Twenty to twenty-one', selector: '.age'},
+    {name: 'Poem', selector: '.poem'},
+    {name: 'Eight years', selector: '.memory'},
+    {name: 'Happy Birthday', selector: '.celebration'},
+    {name: 'Photos', selector: '.six'},
+    {name: 'One more thing', selector: '.final-surprise'},
+    {name: 'Ending', selector: '.nine'}
+];
 const $ = selector => document.querySelector(selector);
 
 // The midnight gate is presentation only; the device clock supplies the time.
@@ -15,12 +33,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     song.addEventListener('play', updateMusicControl);
     song.addEventListener('pause', updateMusicControl);
-    $('#skip').addEventListener('click', () => {
-        if (!birthdayTimeline) return;
-        birthdayTimeline.seek('celebration', true).play();
-        setParticles(false);
-        window.scrollTo(0, 0);
+    $('#next').addEventListener('click', nextSection);
+    $('#turn-age').addEventListener('click', () => {
+        if (currentSection !== 3 || !birthdayTimeline || birthdayTimeline.time() >= birthdayTimeline.labels.turn) return;
+        birthdayTimeline.seek('turn').play();
     });
+    $('#read-message').addEventListener('click', () => {
+        if (currentSection !== 2 || !birthdayTimeline) return;
+        if (birthdayTimeline.paused()) {
+            birthdayTimeline.play();
+            $('#read-message').textContent = 'Pause to read';
+            $('#read-message').setAttribute('aria-pressed', 'false');
+        } else {
+            birthdayTimeline.seek('letter-read').pause();
+            $('#read-message').textContent = 'Continue →';
+            $('#read-message').setAttribute('aria-pressed', 'true');
+        }
+    });
+    setupCarousel();
+    $('.letter-again p').textContent = $('.hbd-chatbox').textContent;
     $('#replay').addEventListener('click', replay);
     setupLightbox();
     let taps = 0;
@@ -116,8 +147,11 @@ function showStaticBirthday() {
     clearConfetti();
     $('.container').classList.add('static-presentation');
     $('.container').querySelectorAll('[style]').forEach(element => element.removeAttribute('style'));
-    $('#skip').hidden = true;
+    $('#next').hidden = true;
     $('#progress').hidden = true;
+    $('#read-message').hidden = true;
+    $('#turn-age').hidden = true;
+    showPhoto(photoIndex, false);
 }
 
 function replay() {
@@ -128,10 +162,9 @@ function replay() {
     $('#egg-message').hidden = true;
     if (!song.paused) song.currentTime = 0;
     window.scrollTo(0, 0);
-    if (birthdayTimeline) {
-        $('#skip').hidden = false;
-        birthdayTimeline.restart();
-    }
+    $('.letter-again').open = false;
+    showPhoto(0, false);
+    if (birthdayTimeline) goToSection(0);
 }
 
 function setupLightbox() {
@@ -193,93 +226,213 @@ function setParticles(active) {
     }
 }
 
-// Keep one seekable GSAP timeline. Scene visibility is timeline state, so Skip
-// and Replay produce the same result as normal playback, without new listeners.
+// One active section timeline owns autoplay. Next kills it before advancing a
+// single index, so callbacks from a skipped section cannot advance us again.
 function animationTimeline() {
-    splitGraphemes($('#name'));
-    splitGraphemes($('.hbd-chatbox'));
-    splitGraphemes($('.wish-hbd'));
-    const duration = reducedMotion ? 0.15 : 0.6;
-    const rise = reducedMotion ? 0 : 16;
-    const scenes = '.container > div:not(.seven):not(.eight)';
-    const tl = gsap.timeline({paused: true, onUpdate: () => {
-        $('#progress').value = tl.progress();
-        const t = tl.time();
-        setParticles(t >= tl.labels.emotional && t < tl.labels.celebration);
+    if (!presentationStarted) {
+        splitGraphemes($('#name'));
+        splitGraphemes($('.wish-hbd'));
+        const letter = $('.hbd-chatbox');
+        const text = letter.textContent;
+        letter.setAttribute('aria-label', text);
+        letter.replaceChildren();
+        for (const token of text.split(/(\s+)/u)) {
+            if (!token) continue;
+            if (/^\s+$/u.test(token)) letter.appendChild(document.createTextNode(token));
+            else {
+                const word = document.createElement('span');
+                word.textContent = token;
+                word.setAttribute('aria-hidden', 'true');
+                letter.appendChild(word);
+            }
+        }
+        presentationStarted = true;
+    }
+    $('.container').style.visibility = 'visible';
+    $('#progress').hidden = false;
+    goToSection(0);
+}
+
+function nextSection() {
+    if (!birthdayTimeline || performance.now() < navigationLockedUntil || currentSection >= sections.length - 1) return;
+    goToSection(currentSection + 1);
+}
+
+function goToSection(index) {
+    if (index < 0 || index >= sections.length) return;
+    birthdayTimeline?.kill();
+    photoTimeline?.kill();
+    clearConfetti();
+    currentSection = index;
+    navigationLockedUntil = performance.now() + 400;
+    // Keep the memory card available alongside the final note and replay.
+    for (let i = 0; i < sections.length; i++) {
+        const scene = $(sections[i].selector);
+        const keep = i === index || (index >= 8 && i === 7) || (index === 9 && i === 8);
+        gsap.set(scene, {display: keep ? 'block' : 'none', autoAlpha: keep ? 1 : 0, y: 0});
+    }
+    gsap.set('.baloons img, .eight svg', {autoAlpha: 0});
+    if (index >= 8) showPhoto(photoIndex, false);
+    $('#next').hidden = index === sections.length - 1;
+    $('#progress').value = index + 1;
+    $('#progress').setAttribute('aria-valuetext', `${index + 1} of ${sections.length}: ${sections[index].name}`);
+    setParticles(index >= 2 && index <= 5);
+    const scene = $(sections[index].selector);
+    if (index < 8) window.scrollTo(0, 0);
+    else scene.scrollIntoView({behavior: reducedMotion ? 'auto' : 'smooth', block: 'center'});
+    const tl = gsap.timeline({paused: true, onComplete: () => {
+        if (currentSection === index && index < sections.length - 1) goToSection(index + 1);
     }});
     birthdayTimeline = tl;
-    $('#progress').hidden = false;
-    const enter = selector => {
-        tl.set(selector, {display: 'block'})
-          .fromTo(selector, {autoAlpha: 0, y: rise}, {autoAlpha: 1, y: 0, duration, immediateRender: false});
-    };
-    const leave = (selector, hold) => {
-        tl.to(selector, {autoAlpha: 0, duration}, `+=${hold}`).set(selector, {display: 'none'});
-    };
-    tl.set('.container', {visibility: 'visible'})
-      .set(scenes, {display: 'none', autoAlpha: 0, y: 0})
-      .set('#skip', {display: 'block'})
-      .set('#affection, .final-note, .one-more, .age-note, .memory p, .poem p', {autoAlpha: 0})
-      .set('#name', {autoAlpha: 1})
-      .set('.hbd-chatbox span', {visibility: 'hidden'})
-      .set('.baloons img, .eight svg', {autoAlpha: 0});
-    enter('.container > .one');
-    tl.fromTo('#name span', {autoAlpha: 0}, {autoAlpha: 1, duration: 0.1, stagger: reducedMotion ? 0 : 0.12, immediateRender: false})
-      .to('#name', {autoAlpha: 0, duration}, '+=1')
-      .to('#affection', {autoAlpha: 1, duration});
-    leave('.container > .one', 4);
-    enter('.three');
-    leave('.three', 3);
-    // Retain the existing short birthday sentiments before the personal letter.
-    tl.set('.five p', {autoAlpha: 0});
-    enter('.five');
-    for (const selector of ['.idea-1', '.idea-2', '.idea-3', '.idea-4', '.idea-7', '.idea-5', '.idea-6']) {
-        tl.to(selector, {autoAlpha: 1, duration}).to(selector, {autoAlpha: 0, duration}, '+=1.2');
+    const duration = reducedMotion ? 0.12 : 0.35;
+    const rise = reducedMotion ? 0 : 12;
+    const hold = seconds => tl.to({}, {duration: seconds});
+    tl.fromTo(scene, {autoAlpha: 0, y: rise}, {autoAlpha: 1, y: 0, duration});
+    switch (index) {
+        case 0:
+            gsap.set('#name', {autoAlpha: 1});
+            gsap.set('#affection', {autoAlpha: 0});
+            tl.fromTo('#name span', {autoAlpha: 0}, {autoAlpha: 1, duration: 0.08, stagger: reducedMotion ? 0 : 0.07})
+              .to('#name', {autoAlpha: 0, duration}, '+=0.6')
+              .to('#affection', {autoAlpha: 1, duration});
+            hold(1.2);
+            break;
+        case 1:
+            hold(1.1);
+            break;
+        case 2:
+            $('#read-message').textContent = 'Pause to read';
+            $('#read-message').setAttribute('aria-pressed', 'false');
+            tl.fromTo('.hbd-chatbox span', {autoAlpha: 0}, {
+                autoAlpha: 1, duration: reducedMotion ? 0 : 0.12, stagger: reducedMotion ? 0 : 0.022
+            }).addLabel('letter-read');
+            hold(1.2);
+            break;
+        case 3:
+            gsap.set('.age-zero', {autoAlpha: 1, yPercent: 0, rotationX: 0});
+            gsap.set('.age-one', {autoAlpha: 0, yPercent: reducedMotion ? 0 : 100, rotationX: reducedMotion ? 0 : -60});
+            gsap.set('.age-note', {autoAlpha: 0});
+            gsap.set('.age-intro, #turn-age', {autoAlpha: 1});
+            gsap.set('.age-number', {scale: 1, textShadow: '0 0 0px transparent'});
+            hold(1);
+            tl.addLabel('turn')
+              .to('#turn-age, .age-intro', {autoAlpha: 0, duration: 0.15})
+              .to('.age-zero', {autoAlpha: 0, yPercent: reducedMotion ? 0 : -110, rotationX: reducedMotion ? 0 : 60, duration: 0.45}, 'turn')
+              .to('.age-one', {autoAlpha: 1, yPercent: 0, rotationX: 0, duration: 0.45, ease: 'power2.out'}, 'turn+=0.12')
+              .to('.age-number', {scale: reducedMotion ? 1 : 1.06, textShadow: '0 0 28px #e6579266', duration: 0.25, repeat: 1, yoyo: true})
+              .to('.age-note', {autoAlpha: 1, duration: 0.25});
+            hold(0.9);
+            break;
+        case 4:
+            tl.fromTo('.poem p', {autoAlpha: 0, y: rise}, {
+                autoAlpha: 1, y: 0, duration, stagger: reducedMotion ? 0.35 : 0.5
+            });
+            hold(1.2);
+            break;
+        case 5:
+            tl.fromTo('.memory .years', {autoAlpha: 0}, {autoAlpha: 1, duration})
+              .fromTo('.memory p:last-child', {autoAlpha: 0}, {autoAlpha: 1, duration}, '+=0.25');
+            hold(1.2);
+            break;
+        case 6:
+            tl.call(burstConfetti)
+              .fromTo('.wish-hbd span', {autoAlpha: 0, y: -rise}, {
+                  autoAlpha: 1, y: 0, color: '#ff69b4', duration, stagger: reducedMotion ? 0 : 0.025
+              });
+            if (!reducedMotion) {
+                tl.fromTo('.baloons img', {autoAlpha: 0.7, y: window.innerHeight + 150}, {
+                    autoAlpha: 0, y: -300, duration: 2, stagger: 0.025
+                }, 0.35)
+                .fromTo('.eight svg', {autoAlpha: 0.18, scale: 1}, {
+                    autoAlpha: 0, scale: 5, duration: 1.5, stagger: 0.06
+                }, 0.35);
+            }
+            hold(0.6);
+            break;
+        case 7:
+            carouselManual = false;
+            showPhoto(0, false);
+            // Each of the four photos gets a turn without requiring arrow clicks.
+            for (let i = 1; i < 4; i++) {
+                hold(2.4);
+                tl.call(() => { if (!carouselManual) showPhoto(i); });
+            }
+            hold(2.4);
+            break;
+        case 8:
+            gsap.set('.one-more, .final-note', {autoAlpha: 0});
+            tl.to('.one-more', {autoAlpha: 1, duration})
+              .to('.final-note', {autoAlpha: 1, duration}, '+=0.7');
+            hold(1.2);
+            break;
+        case 9:
+            // This screen stays available, along with photos and the full letter.
+            break;
     }
-    leave('.five', 0);
-    tl.addLabel('emotional');
-    enter('.four');
-    tl.to('.hbd-chatbox span', {visibility: 'visible', duration: 0, stagger: reducedMotion ? 0 : 0.018});
-    // Reading time is independent of motion preference. Native document scrolling
-    // keeps every paragraph accessible; Skip is available throughout this hold.
-    leave('.four', 125);
-    tl.call(() => window.scrollTo(0, 0));
-    enter('.memory');
-    tl.to('.memory .years', {autoAlpha: 1, duration})
-      .to('.memory p:last-child', {autoAlpha: 1, duration}, '+=1');
-    leave('.memory', 5);
-    enter('.poem');
-    tl.fromTo('.poem p', {autoAlpha: 0, y: rise}, {
-        autoAlpha: 1, y: 0, duration, stagger: reducedMotion ? 0.2 : 1.3, immediateRender: false
-    });
-    leave('.poem', 7);
-    enter('.age');
-    tl.fromTo('.age-number', {scale: reducedMotion ? 1 : 0.8}, {scale: 1, duration, immediateRender: false})
-      .to('.age-note', {autoAlpha: 1, duration}, '+=1');
-    leave('.age', 3);
-    tl.addLabel('celebration')
-      .set('#skip', {display: 'none'});
-    enter('.six');
-    tl.call(burstConfetti)
-      .fromTo('.wish-hbd span', {autoAlpha: 0, y: -rise}, {
-          autoAlpha: 1, y: 0, color: '#ff69b4', duration,
-          stagger: reducedMotion ? 0 : 0.06, immediateRender: false
-      });
-    if (!reducedMotion) {
-        tl.fromTo('.baloons img', {autoAlpha: 0.7, y: window.innerHeight + 150}, {
-            autoAlpha: 0, y: -300, duration: 5, stagger: 0.08, immediateRender: false
-        }, '<')
-        .fromTo('.eight svg', {autoAlpha: 0.2, scale: 1}, {
-            autoAlpha: 0, scale: 6, duration: 2, stagger: 0.15, immediateRender: false
-        }, '<');
-    }
-    tl.to({}, {duration: 18});
-    // The gallery stays in document flow through the surprise and ending.
-    enter('.final-surprise');
-    tl.call(() => $('.final-surprise').scrollIntoView({behavior: reducedMotion ? 'auto' : 'smooth', block: 'center'}))
-      .to('.one-more', {autoAlpha: 1, duration})
-      .to('.final-note', {autoAlpha: 1, duration}, '+=2.5')
-      .to({}, {duration: 4});
-    enter('.nine');
+    if (index < 7) tl.to(scene, {autoAlpha: 0, duration: reducedMotion ? 0.1 : 0.18});
     tl.play(0);
+}
+
+function setupCarousel() {
+    showPhoto(0, false);
+    const move = delta => {
+        carouselManual = true;
+        showPhoto(photoIndex + delta);
+        // Give manual browsing a fresh viewing window without delaying other stages.
+        if (currentSection === 7 && birthdayTimeline && !$('#lightbox').open) {
+            birthdayTimeline.seek(Math.max(0, birthdayTimeline.duration() - 3), true).play();
+        }
+    };
+    $('#photo-prev').addEventListener('click', () => move(-1));
+    $('#photo-next').addEventListener('click', () => move(1));
+    $('.six').addEventListener('keydown', event => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            move(event.key === 'ArrowLeft' ? -1 : 1);
+        }
+    });
+    let touchStart;
+    let swiped = false;
+    const gallery = $('.photo-gallery');
+    gallery.addEventListener('touchstart', event => {
+        touchStart = [event.touches[0].clientX, event.touches[0].clientY];
+        swiped = false;
+    }, {passive: true});
+    gallery.addEventListener('touchend', event => {
+        if (!touchStart) return;
+        const dx = event.changedTouches[0].clientX - touchStart[0];
+        const dy = event.changedTouches[0].clientY - touchStart[1];
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+            swiped = true;
+            move(dx < 0 ? 1 : -1);
+        }
+        touchStart = null;
+    }, {passive: true});
+    gallery.addEventListener('click', event => {
+        if (swiped) { event.preventDefault(); event.stopPropagation(); swiped = false; }
+    }, true);
+}
+
+function showPhoto(index, animate = true) {
+    const cards = [...document.querySelectorAll('.photo-button')];
+    const next = (index + cards.length) % cards.length;
+    const previous = photoIndex;
+    photoTimeline?.kill();
+    photoIndex = next;
+    const displayCard = () => {
+        cards.forEach((card, i) => {
+            card.hidden = i !== next;
+            card.style.opacity = '1';
+            card.style.transform = '';
+        });
+        $('#photo-counter').textContent = `${next + 1} / ${cards.length}`;
+    };
+    if (!animate || reducedMotion || !window.gsap || previous === next) { displayCard(); return; }
+    const direction = index > previous ? 1 : -1;
+    // Finish any interrupted card transition before starting another.
+    cards.forEach((card, i) => { card.hidden = i !== previous; });
+    photoTimeline = gsap.timeline()
+        .to(cards[previous], {opacity: 0, x: -direction * 12, duration: 0.12})
+        .call(displayCard)
+        .fromTo(cards[next], {opacity: 0, x: direction * 12}, {opacity: 1, x: 0, duration: 0.22, immediateRender: false});
 }

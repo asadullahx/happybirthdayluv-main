@@ -10,7 +10,7 @@
   <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;600&family=Nunito:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- My Style -->
   <link rel="stylesheet" href="./style/main.css" />
 </head>
@@ -42,7 +42,7 @@
             <p>It's your birthday!! :D</p>
         </div>
 
-        <div class="four">
+        <div class="four"><button id="read-message" class="soft-button" type="button" aria-pressed="false">Pause to read</button>
             <p class="hbd-chatbox">You might not be the best, but you are more than enough! For me, at least. ❤️ Te amo, mi amor. 🫶
 
 You might not always have been there for me when I needed you, but whenever you were, it felt amazingly comfortable and genuinely helpful. You are a friend with whom I can share, tell, and discuss anything (unfortunately, not all the time 🥲). But I understand the complexities and uncertainties of life, so chills, I am never mad at you. Never was, am not, and never would be (hopefully 😭😂).
@@ -62,16 +62,13 @@ May you recover from whatever hardships and struggles you are going through in l
 Stay strong, champ! 💪❤️ &lt;3</p>
         </div>
 
-        <div class="five">
-            <p class="idea-1">A little birthday surprise for you, luv. 🎁❤️</p>
-            <p class="idea-2">A few words, a few memories...</p>
-            <p class="idea-3">And so many reasons to celebrate you.</p>
-            <p class="idea-4">I wanted to make today <strong>special</strong>.</p>
-            <p class="idea-7">Because,</p>
-            <p class="idea-5">You are Special <span>:)</span></p>
-            <p class="idea-6"><span>S</span><span>O</span></p>
+
+        <div class="age">
+            <p class="age-intro">one last look at twenty...</p>
+            <div class="age-number" aria-label="20 becomes 21"><span>2</span><span class="age-digit" aria-hidden="true"><span class="age-zero">0</span><span class="age-one">1</span></span></div>
+            <button id="turn-age" class="soft-button" type="button">Turn the page →</button>
+            <p class="age-note">Hello, twenty-one. ❤️</p>
         </div>
-        <div class="memory"><p class="years">2018 → 2026</p><p>8 years. A lot changed. Somehow, we're still here. ❤️</p></div>
         <div class="poem" aria-label="Goodbye twenty, hello twenty-one">
             <p>The final year of childhood’s shade,</p>
             <p>Begins to blur, begins to fade.</p>
@@ -82,20 +79,28 @@ Stay strong, champ! 💪❤️ &lt;3</p>
             <p>The chapters turn, the waters run,</p>
             <p>Goodbye twenty, hello twenty-one.</p>
         </div>
-        <div class="age"><p class="age-number">21</p><p class="age-note">21 years... and many more to go. ❤️</p></div>
 
-        <div class="six">
+
+        <div class="memory"><p class="years">2018 → 2026</p><p>8 years. A lot changed. Somehow, we're still here. ❤️</p></div>
+
+        <div class="celebration">
             <div class="wish">
                 <h3 class="wish-hbd">Happy Birthday!</h3>
                 <h5 id="wishText">Happy 21st birthday, Khawar Ali. Here’s to you, luv. ❤️</h5>
             </div>
-            <div class="photo-gallery">
+        </div>
+        <div class="six" aria-label="Birthday photo carousel" aria-roledescription="carousel">
+            <div class="carousel-layout">
+                <button id="photo-prev" class="carousel-arrow" type="button" aria-label="Previous photo">←</button>
+                <div class="photo-gallery">
                 <button class="photo-button" aria-label="Open birthday photo 1"><img src="./img/1.png" alt="Birthday photo 1" class="gallery-photo" /><span class="photo-caption">Caption 1</span></button>
                 <button class="photo-button" aria-label="Open birthday photo 2"><img src="./img/2.png" alt="Birthday photo 2" class="gallery-photo" /><span class="photo-caption">Caption 2</span></button>
                 <button class="photo-button" aria-label="Open birthday photo 3"><img src="./img/3.png" alt="Birthday photo 3" class="gallery-photo" /><span class="photo-caption">Caption 3</span></button>
                 <button class="photo-button" aria-label="Open birthday photo 4"><img src="./img/4.png" alt="Birthday photo 4" class="gallery-photo" /><span class="photo-caption">Caption 4</span></button>
+                </div>
+                <button id="photo-next" class="carousel-arrow" type="button" aria-label="Next photo">→</button>
             </div>
-
+            <p id="photo-counter" role="status" aria-live="polite">1 / 4</p>
         </div>
 
         <div class="seven">
@@ -170,11 +175,11 @@ Stay strong, champ! 💪❤️ &lt;3</p>
         <div class="nine">
             <p>Hope this made you smile, luv. ❤️</p>
             <button id="replay" type="button">Watch it again ↻</button>
-            <p class="last-smile">:)</p>
+            <p class="last-smile">:)</p><details class="letter-again"><summary>Read your birthday message again</summary><p></p></details>
         </div>
     </main>
-    <div class="presentation-controls" hidden><button id="music-control" type="button" aria-pressed="false">Play music ♫</button><button id="skip" type="button">Skip →</button></div>
-    <progress id="progress" max="1" value="0" aria-label="Birthday presentation progress" hidden></progress>
+    <div class="presentation-controls" hidden><button id="music-control" type="button" aria-pressed="false">Play music ♫</button><button id="next" type="button">Next →</button></div>
+    <progress id="progress" max="10" value="0" aria-label="Birthday presentation progress" hidden></progress>
     <div id="particles" aria-hidden="true"></div>
     <p id="egg-message" role="status" hidden>still my favorite human ❤️</p>
     <dialog id="lightbox" aria-label="Enlarged birthday photo"><button id="close-lightbox" type="button" aria-label="Close photo">✕</button><img alt="" /></dialog>
