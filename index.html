@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <link rel="shortcut icon" type="image/png" href="img/favicon.png" />
+  <link rel="icon" type="image/svg+xml" href="img/heart.svg" />
   <title>Happy Birthday, Luv ❤️</title>
   <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,7 +33,7 @@
         <div class="one">
             <h1 class="one">
                 Hi
-                <span id="name">Khawar Ali</span><span id="affection">luv ❤️</span>
+                <span id="name">Khawar Ali</span><button id="affection" class="luv-egg" type="button" aria-label="luv ❤️">luv ❤️</button>
             </h1>
             <p class="two" id="greetingText">Today is all about you, luv. ❤️</p>
         </div>
@@ -72,19 +72,30 @@ Stay strong, champ! 💪❤️ &lt;3</p>
             <p class="idea-6"><span>S</span><span>O</span></p>
         </div>
         <div class="memory"><p class="years">2018 → 2026</p><p>8 years. A lot changed. Somehow, we're still here. ❤️</p></div>
-        <div class="age"><p class="age-number">21</p><p>21 years... and many more to go. ❤️</p></div>
+        <div class="poem" aria-label="Goodbye twenty, hello twenty-one">
+            <p>The final year of childhood’s shade,</p>
+            <p>Begins to blur, begins to fade.</p>
+            <p>The carefree days of twenty leave,</p>
+            <p>As morning light starts to weave.</p>
+            <p>A step ahead, a turning key,</p>
+            <p>To who you are and meant to be.</p>
+            <p>The chapters turn, the waters run,</p>
+            <p>Goodbye twenty, hello twenty-one.</p>
+        </div>
+        <div class="age"><p class="age-number">21</p><p class="age-note">21 years... and many more to go. ❤️</p></div>
 
         <div class="six">
-            <div class="photo-gallery">
-                <button class="photo-button" aria-label="Open birthday photo 1"><img src="./img/1.png" alt="Birthday photo 1" class="gallery-photo" /></button>
-                <button class="photo-button" aria-label="Open birthday photo 2"><img src="./img/2.png" alt="Birthday photo 2" class="gallery-photo" /></button>
-                <button class="photo-button" aria-label="Open birthday photo 3"><img src="./img/3.png" alt="Birthday photo 3" class="gallery-photo" /></button>
-                <button class="photo-button" aria-label="Open birthday photo 4"><img src="./img/4.png" alt="Birthday photo 4" class="gallery-photo" /></button>
-            </div>
             <div class="wish">
                 <h3 class="wish-hbd">Happy Birthday!</h3>
                 <h5 id="wishText">Happy 21st birthday, Khawar Ali. Here’s to you, luv. ❤️</h5>
             </div>
+            <div class="photo-gallery">
+                <button class="photo-button" aria-label="Open birthday photo 1"><img src="./img/1.png" alt="Birthday photo 1" class="gallery-photo" /><span class="photo-caption">Caption 1</span></button>
+                <button class="photo-button" aria-label="Open birthday photo 2"><img src="./img/2.png" alt="Birthday photo 2" class="gallery-photo" /><span class="photo-caption">Caption 2</span></button>
+                <button class="photo-button" aria-label="Open birthday photo 3"><img src="./img/3.png" alt="Birthday photo 3" class="gallery-photo" /><span class="photo-caption">Caption 3</span></button>
+                <button class="photo-button" aria-label="Open birthday photo 4"><img src="./img/4.png" alt="Birthday photo 4" class="gallery-photo" /><span class="photo-caption">Caption 4</span></button>
+            </div>
+
         </div>
 
         <div class="seven">
@@ -163,6 +174,9 @@ Stay strong, champ! 💪❤️ &lt;3</p>
         </div>
     </main>
     <div class="presentation-controls" hidden><button id="music-control" type="button" aria-pressed="false">Play music ♫</button><button id="skip" type="button">Skip →</button></div>
+    <progress id="progress" max="1" value="0" aria-label="Birthday presentation progress" hidden></progress>
+    <div id="particles" aria-hidden="true"></div>
+    <p id="egg-message" role="status" hidden>still my favorite human ❤️</p>
     <dialog id="lightbox" aria-label="Enlarged birthday photo"><button id="close-lightbox" type="button" aria-label="Close photo">✕</button><img alt="" /></dialog>
     <noscript><p>Please enable JavaScript to see the midnight countdown and birthday surprise.</p></noscript>
 </body>
